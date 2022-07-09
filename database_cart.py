@@ -21,10 +21,8 @@ def decode_barcode():
             ret, frame = vid.read()
             cv2.imshow("frame", frame)
             if cv2.waitKey(1) & 0xFF == ord("c"):
-                cv2.imwrite("image.png", frame)
                 print("Captured")
-                img = cv2.imread("image.png")
-                detectedBarcodes = decode(img)
+                detectedBarcodes = decode(frame)
                 for barcode in detectedBarcodes:
                     print(barcode.data)
                 return int(barcode.data)
@@ -150,7 +148,7 @@ while True:
     add_to_cart()
 
     if cv2.waitKey(1) & 0xFF == ord("q"):
-        shop_cursor.execute("DELETE FROM purchased;",)
+
         break
 
 shop_cursor.execute("DELETE FROM purchased;",)
