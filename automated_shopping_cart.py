@@ -144,6 +144,8 @@ def add_to_cart():
         pass
 
 
+shop_cursor.execute("DELETE FROM purchased;",)
+
 while True:
     add_to_cart()
 
@@ -151,4 +153,3 @@ while True:
 
         break
 
-shop_cursor.execute("DELETE FROM purchased;",)
