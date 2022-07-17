@@ -17,16 +17,28 @@ shop_cursor = shop_database.cursor()
 def decode_barcode():
     try:
         vid = cv2.VideoCapture("http://asd:123@192.168.0.111:8080/video")
+        # vid = cv2.VideoCapture(0)
         while True:
             ret, frame = vid.read()
             cv2.imshow("frame", frame)
-            if cv2.waitKey(1) & 0xFF == ord("c"):
+            k = cv2.waitKey(1)
+            if k == ord("r"):
+                print("Removing")
+                detectedBarcodes = decode(frame)
+                flag = 0
+                print("Flag:", flag)
+                for barcode in detectedBarcodes:
+                    print("Barcode Data:", barcode.data)
+                return int(barcode.data), flag
+            if k == ord("c"):
                 print("Captured")
+                flag = 1
+                print("Flag: ", flag)
                 detectedBarcodes = decode(frame)
                 for barcode in detectedBarcodes:
-                    print(barcode.data)
-                return int(barcode.data)
-            if cv2.waitKey(1) & 0xFF == ord("q"):
+                    print("Barcode Data:", barcode.data)
+                return int(barcode.data), flag
+            if k == ord("q"):
                 break
     except Exception as e:
         pass
@@ -35,42 +47,69 @@ def decode_barcode():
 ############################### Update Cart ###############################
 
 
-def updateCart(product_details):
+def updateCart(product_details, flag):
+
     try:
         total_amount = float(product_details[0][3])
         item = """SELECT EXISTS(SELECT 1 FROM purchased WHERE name = ?)"""
         shop_cursor.execute(item, (product_details[0][1],))
         cart_items = shop_cursor.fetchall()
+        print("In update FLAG = ", flag)
         if cart_items[0][0] == 1:
-            shop_cursor.execute(
-                "SELECT quantity FROM purchased WHERE name = ?",
-                (product_details[0][1],),
-            )
-            item_quantity = shop_cursor.fetchall()
-            quantity = int(item_quantity[0][0]) + 1
-            shop_cursor.execute(
-                "UPDATE purchased SET quantity = ? WHERE name = ?",
-                (quantity, product_details[0][1]),
-            )
-            price = float(product_details[0][3])
-            total_amount = price * quantity
+            if flag == 1:
+                shop_cursor.execute(
+                    "SELECT quantity FROM purchased WHERE name = ?",
+                    (product_details[0][1],),
+                )
+                item_quantity = shop_cursor.fetchall()
+                quantity = int(item_quantity[0][0]) + 1
+                shop_cursor.execute(
+                    "UPDATE purchased SET quantity = ? WHERE name = ?",
+                    (quantity, product_details[0][1]),
+                )
+                price = float(product_details[0][3])
+                total_amount = price * quantity
+            elif flag == 0:
+                shop_cursor.execute(
+                    "SELECT quantity FROM purchased WHERE name = ?",
+                    (product_details[0][1],),
+                )
+                item_quantity = shop_cursor.fetchall()
+                quantity = int(item_quantity[0][0]) - 1
+                shop_cursor.execute(
+                    "UPDATE purchased SET quantity = ? WHERE name = ?",
+                    (quantity, product_details[0][1]),
+                )
+                price = float(product_details[0][3])
+                total_amount = price * quantity
+                if total_amount < 0 or quantity < 0:
+                    total_amount = 0
+                    quantity = 0
+                    shop_cursor.execute(
+                        "DELETE FROM purchased WHERE name = ?", (product_details[0][1],)
+                    )
         else:
-            print("Adding {0} to cart".format(product_details[0][1]))
-            cart_list = (
-                """INSERT INTO purchased (name,price, quantity) VALUES (?,?,?)"""
-            )
-            shop_cursor.execute(
-                cart_list, (product_details[0][1], product_details[0][3], 1)
-            )
-            total_amount = float(product_details[0][3])
-            shop_cursor.execute(
-                "UPDATE purchased SET total = ? WHERE name = ?",
-                (total_amount, product_details[0][1]),
-            )
+            if flag == 1:
+                print("Adding {0} to cart".format(product_details[0][1]))
+                cart_list = (
+                    """INSERT INTO purchased (name,price, quantity) VALUES (?,?,?)"""
+                )
+                shop_cursor.execute(
+                    cart_list, (product_details[0][1], product_details[0][3], 1)
+                )
+                total_amount = float(product_details[0][3])
+                shop_cursor.execute(
+                    "UPDATE purchased SET total = ? WHERE name = ?",
+                    (total_amount, product_details[0][1]),
+                )
+            elif flag == 0:
+                pass
+
         shop_cursor.execute(
             "UPDATE purchased SET total = ? WHERE name = ?",
             (total_amount, product_details[0][1]),
         )
+
         shop_database.commit()
 
     except Exception as e:
@@ -110,11 +149,11 @@ def add_to_cart():
     try:
         global total_amount
         total_amount = 0.0
-        detectedBarcodes = decode_barcode()
+        detectedBarcodes, flag = decode_barcode()
         product_details = """select * from product where code = ?"""
         shop_cursor.execute(product_details, (detectedBarcodes,))
         product_details = shop_cursor.fetchall()
-        updateCart(product_details)
+        updateCart(product_details, flag)
         shop_cursor.execute("SELECT * FROM purchased")
         purchased_items = shop_cursor.fetchall()
 
@@ -127,7 +166,7 @@ def add_to_cart():
         total = list(shop_cursor.fetchall())
         for i in range(len(total)):
             total_amount = total_amount + sum(list(total[i]))
-        display(purchased_items)
+        # display(purchased_items)
         for items in purchased_items:
             # print("items", items)
             print("Name: {0}, \t  Price: {1}".format(items[0], items[1]))
