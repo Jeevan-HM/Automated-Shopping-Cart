@@ -1,6 +1,7 @@
 ############################### Import Library ###############################
 
 import cv2
+
 import drivers
 from pyzbar.pyzbar import decode
 import sqlite3
@@ -16,7 +17,7 @@ shop_cursor = shop_database.cursor()
 
 def decode_barcode():
     try:
-        vid = cv2.VideoCapture("http://asd:123@192.168.0.111:8080/video")
+        # vid = cv2.VideoCapture("http://asd:123@192.168.0.111:8080/video")
         # vid = cv2.VideoCapture(0)
         while True:
             ret, frame = vid.read()
@@ -26,7 +27,7 @@ def decode_barcode():
                 print("Removing")
                 detectedBarcodes = decode(frame)
                 flag = 0
-                print("Flag:", flag)
+                # print("Flag:", flag)
                 for barcode in detectedBarcodes:
                     print("Barcode Data:", barcode.data)
                 return int(barcode.data), flag
@@ -54,7 +55,7 @@ def updateCart(product_details, flag):
         item = """SELECT EXISTS(SELECT 1 FROM purchased WHERE name = ?)"""
         shop_cursor.execute(item, (product_details[0][1],))
         cart_items = shop_cursor.fetchall()
-        print("In update FLAG = ", flag)
+        # print("In update FLAG = ", flag)
         if cart_items[0][0] == 1:
             if flag == 1:
                 shop_cursor.execute(
