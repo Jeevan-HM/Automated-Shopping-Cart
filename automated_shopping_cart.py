@@ -1,7 +1,6 @@
 ############################### Import Library ###############################
 
 import cv2
-
 import drivers
 from pyzbar.pyzbar import decode
 import sqlite3
@@ -17,7 +16,8 @@ shop_cursor = shop_database.cursor()
 
 def decode_barcode():
     try:
-        # vid = cv2.VideoCapture("http://asd:123@192.168.0.111:8080/video")
+        vid = cv2.VideoCapture(0)
+
         # vid = cv2.VideoCapture(0)
         while True:
             ret, frame = vid.read()
@@ -167,7 +167,7 @@ def add_to_cart():
         total = list(shop_cursor.fetchall())
         for i in range(len(total)):
             total_amount = total_amount + sum(list(total[i]))
-        # display(purchased_items)
+        display(purchased_items)
         for items in purchased_items:
             # print("items", items)
             print("Name: {0}, \t  Price: {1}".format(items[0], items[1]))
